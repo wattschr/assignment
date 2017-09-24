@@ -15,35 +15,30 @@ package chris.grpc;
  * limitations under the License.
  */
 
-import gappless.book.Book;
-import gappless.book.BookServiceGrpc;
-import gappless.book.Status;
-import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import io.grpc.ServerServiceDefinition;
-import io.grpc.stub.StreamObserver;
-import org.springframework.context.annotation.Bean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.logging.Logger;
-
-import static io.grpc.stub.ServerCalls.asyncUnaryCall;
 
 
 @Component
-class BookJsonServer {
-    private static final Logger logger = Logger.getLogger(BookJsonServer.class.getName());
+public class BookJsonServer {
+    private static final Logger logger = LoggerFactory.getLogger(BookJsonServer.class);
 
     private Server server;
 
-    void start() throws IOException {
+    @Autowired
+    private BookServerImpl bindableService;
+
+    public void start() throws IOException {
     /* The port on which the data should run */
         int port = 50051;
         server = ServerBuilder.forPort(port)
-                .addService(new BookServerImpl())
+                .addService(bindableService)
                 .build()
                 .start();
         logger.info("Server started, listening on " + port);
@@ -64,28 +59,9 @@ class BookJsonServer {
     /**
      * Await termination on the main thread since the grpc library uses daemon threads.
      */
-    void blockUntilShutdown() throws InterruptedException {
+    public void blockUntilShutdown() throws InterruptedException {
         if (server != null) {
             server.awaitTermination();
-        }
-    }
-
-    private static class BookServerImpl implements BindableService {
-
-        private void save(Book req, StreamObserver<Status> responseObserver) {
-            System.out.println("req = " + req);
-            Status reply = Status.newBuilder().setSuccess(true).build();
-            responseObserver.onNext(reply);
-            responseObserver.onCompleted();
-        }
-
-        @Override
-        public ServerServiceDefinition bindService() {
-            return io.grpc.ServerServiceDefinition
-                    .builder(BookServiceGrpc.getServiceDescriptor().getName())
-                    .addMethod(BookJsonClient.HelloJsonStub.METHOD_SAVE_BOOK,
-                            asyncUnaryCall(this::save))
-                    .build();
         }
     }
 

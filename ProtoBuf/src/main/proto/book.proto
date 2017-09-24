@@ -1,17 +1,21 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "gappless.book";
-option java_outer_classname = "BookProto";
+option java_package = "chris.proto";
 
 package book;
 
 service BookService {
-  rpc SaveBook (Book) returns (Status) {}
+  rpc Update (Book) returns (Status) {}
+  rpc Delete (BookId) returns (Status) {}
 }
 
 message Status {
     bool success = 1;
+}
+
+message BookId {
+    int64 id = 1;
 }
 
 message Book {
