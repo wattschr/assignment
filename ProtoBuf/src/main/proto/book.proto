@@ -8,6 +8,7 @@ package book;
 service BookService {
   rpc Update (Book) returns (Status) {}
   rpc Delete (BookId) returns (Status) {}
+  rpc Get (BookId) returns (Book) {}
 }
 
 message Status {
@@ -18,9 +19,11 @@ message BookId {
     int64 id = 1;
 }
 
+
 message Book {
   int64 id = 1;
   string title = 2;
   int32 nrOfPages =3;
 }
+
 

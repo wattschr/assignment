@@ -30,6 +30,12 @@ final class BookJsonStub extends AbstractStub<BookJsonStub> {
                             ProtoUtils.jsonMarshaller(Status.getDefaultInstance()))
                     .build();
 
+    static final MethodDescriptor<BookId, Book> METHOD_GET_BOOK =
+            BookServiceGrpc.METHOD_GET
+                    .toBuilder(
+                            ProtoUtils.jsonMarshaller(BookId.getDefaultInstance()),
+                            ProtoUtils.jsonMarshaller(Book.getDefaultInstance()))
+                    .build();
     BookJsonStub(Channel channel) {
         super(channel);
     }
@@ -53,5 +59,11 @@ final class BookJsonStub extends AbstractStub<BookJsonStub> {
     Status delete(BookId request) {
         return blockingUnaryCall(
                 getChannel(), METHOD_DELETE_BOOK, getCallOptions(), request);
+    }
+
+    @SuppressWarnings("unused")
+    Book get(BookId request) {
+        return blockingUnaryCall(
+                getChannel(), METHOD_GET_BOOK, getCallOptions(), request);
     }
 }

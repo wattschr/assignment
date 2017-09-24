@@ -19,33 +19,45 @@ import static io.grpc.stub.ServerCalls.asyncUnaryCall;
 
 @Component
 class BookServerImpl implements BindableService {
-    private static final Logger logger = LoggerFactory.getLogger(BookServerImpl.class.getName());
-
+    private static final Logger logger = LoggerFactory.getLogger(BookServerImpl.class);
+    private final ServerAction<Book, Boolean, Status> save;
+    private final ServerAction<BookId, Boolean, Status> delete;
+    private final ServerAction<BookId, chris.domain.Book, Book> get;
     @Autowired
     private BookRepository repository;
 
+    public BookServerImpl() {
+        save = new ServerAction<>(
+                req -> exceptionSafeRun(() -> repository.save(Translator.createDomain(req))),
+                this::statusResponse,
+                ServerAction.Action.UPDATE);
+
+        delete = new ServerAction<>(
+                req -> exceptionSafeRun(() -> repository.delete(req.getId())),
+                this::statusResponse,
+                ServerAction.Action.DELETE);
+
+        get = new ServerAction<>(
+                req -> repository.findOne(req.getId()),
+                Translator::createProto,
+                ServerAction.Action.GET);
+
+    }
+
     private void save(Book req, StreamObserver<Status> responseObserver) {
-        logger.info("Saving {}", req);
-
-        final boolean status = exceptionSafeRun(() -> repository.save(Translator.createDomain(req)));
-
-        logger.info("Finishing save  - successful {}", status);
-        constructReply(responseObserver, status);
+        save.accept(req, responseObserver);
     }
 
     private void delete(BookId req, StreamObserver<Status> responseObserver) {
-        logger.info("Deleting book {}", req);
-
-        final boolean status = exceptionSafeRun(() -> repository.delete(req.getId()));
-
-        logger.info("Finishing delete  - successful {}", status);
-        constructReply(responseObserver, status);
+        delete.accept(req, responseObserver);
     }
 
-    private void constructReply(final StreamObserver<Status> responseObserver, final boolean status) {
-        final Status reply = Status.newBuilder().setSuccess(status).build();
-        responseObserver.onNext(reply);
-        responseObserver.onCompleted();
+    private void get(BookId req, StreamObserver<Book> responseObserver) {
+        get.accept(req, responseObserver);
+    }
+
+    private Status statusResponse(Boolean dom) {
+        return Status.newBuilder().setSuccess(dom).build();
     }
 
 
@@ -65,6 +77,7 @@ class BookServerImpl implements BindableService {
                 .builder(BookServiceGrpc.getServiceDescriptor().getName())
                 .addMethod(BookJsonStub.METHOD_UPDATE_BOOK, asyncUnaryCall(this::save))
                 .addMethod(BookJsonStub.METHOD_DELETE_BOOK, asyncUnaryCall(this::delete))
+                .addMethod(BookJsonStub.METHOD_GET_BOOK, asyncUnaryCall(this::get))
                 .build();
     }
 }
